@@ -7,6 +7,8 @@ import {
   Button,
   Box,
   Paper,
+  FormLabel,
+  Input,
 } from "@mui/material";
 import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
@@ -15,10 +17,16 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { NewsArticle } from "../types/types";
+import { useUser } from "../UserContext";
+import GridViewIcon from "@mui/icons-material/GridView";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import { FormData } from "../types/types";
+import { addDoc, collection } from "firebase/firestore";
+import { db } from "../firebase/firebase";
 
 const Dashboard = () => {
   const newsAPIKey = import.meta.env.VITE_NEWS_API_KEY;
-
+  const { user } = useUser();
   const [open, setOpen] = useState<boolean>(false);
   const [gridView, setGridView] = useState<boolean>(true);
   const [feedBack, setFeedBack] = useState<boolean>(false);
@@ -28,6 +36,15 @@ const Dashboard = () => {
   const [hiddenNews, setHiddenNews] = useState<Set<number>>(new Set());
   const [switchApi, setSwitchApi] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [formData, setFormData] = useState<FormData>({
+      name: "",
+      address: "",
+      country: "",
+      state: "",
+      email: "",
+      mobile: "",
+      feedback: "",
+    });
   const itemsPerPage = 6; // Show 5 items per page
 
   useEffect(() => {
@@ -82,23 +99,59 @@ const Dashboard = () => {
   const handleSwitchApi = () => {
     setSwitchApi((prev) => !prev);
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+  const handleSubmit = async () => {
+    try {
+      const docRef = await addDoc(collection(db, "feedback"), formData);
+      console.log("Document written with ID: ", docRef.id);
+      alert("Feedback Submitted Successfully");
+      setFormData({
+        name: "",
+        address: "",
+        country: "",
+        state: "",
+        email: "",
+        mobile: "",
+        feedback: "",
+      });
+      setFeedBack(false);
+    } catch (err) {
+      console.log(err);
+    }
+  };
   // Calculate the index of the first and last item on the current page
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = newsData.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
-    <div>
+    <Container
+      sx={{
+        display: "flex",
+        flexDirection: {
+          xs: "column",
+          md: "row",
+          marginRight: "0px !important",
+        },
+      }}
+    >
       {/* Sidebar */}
       <Container
         className="sidebar"
         sx={{
-          display: "flex",
+          display: { xs: "none", md: "flex" },
           flexDirection: "row",
           position: "fixed",
           width: feedBack ? "100vw" : "30vw",
-          height: "100vh",
-          top: "0",
+          height: { xs: "auto", md: "100vh" },
+          top: { xs: 0, md: "0" },
           left: "0",
           paddingLeft: "0px !important",
           paddingRight: "0px !important",
@@ -124,24 +177,69 @@ const Dashboard = () => {
       {/* News */}
       <Container
         sx={{
-          width: "70vw",
+          width: { xs: "100vw", md: "70vw" },
           marginRight: "0px !important",
           overflow: feedBack ? "hidden" : "scroll",
         }}
       >
-         <Button
-            onClick={handleSwitchApi}
-            sx={{
-              backgroundColor: switchApi ? "#FFAFAF" : "#A3FFD3",
-              color: "#000",
-              position:"absolute",
-              top:"5%",
-              right:"5%"
-            }}
+        <Container
+          sx={{
+            display: {
+              xs: "flex",
+              md: "none",
+              flexDirection: "column",
+              gap: "20px",
+              marginTop: "20px",
+            },
+          }}
+        >
+          <Typography
+            sx={{ fontSize: "20px", fontFamily: "Roboto", fontWeight: "700" }}
           >
-            {" "}
-            Switch API{" "}
-          </Button>
+            Hi {user?.name}
+          </Typography>
+          <Box>
+            <Button
+              sx={{
+                backgroundColor: gridView ? "#A3FFD3" : "#18274B24",
+                borderTopLeftRadius: "8px !important",
+                borderBottomLeftRadius: "8px !important",
+                borderTopRightRadius: "0px",
+                borderBottomRightRadius: "0px",
+                padding: "20px 15px",
+              }}
+              onClick={() => setGridView(true)}
+            >
+              <GridViewIcon sx={{ color: gridView ? "#000" : "#9c9c9c" }} />
+            </Button>
+            <Button
+              sx={{
+                backgroundColor: gridView ? "#18274B24" : "#A3FFD3",
+                borderTopRightRadius: "8px",
+                borderBottomRightRadius: "8px",
+                borderTopLeftRadius: "0px",
+                borderBottomLeftRadius: "0px",
+                padding: "20px 15px",
+              }}
+              onClick={() => setGridView(false)}
+            >
+              <ViewListIcon sx={{ color: gridView ? "#9c9c9c" : "#000" }} />
+            </Button>
+          </Box>
+        </Container>
+        <Button
+          onClick={handleSwitchApi}
+          sx={{
+            backgroundColor: switchApi ? "#FFAFAF" : "#A3FFD3",
+            color: "#000",
+            position: "absolute",
+            top: "5%",
+            right: "5%",
+          }}
+        >
+          {" "}
+          Switch API{" "}
+        </Button>
         <Container
           sx={{
             display: "grid",
@@ -155,7 +253,6 @@ const Dashboard = () => {
             zIndex: "1",
           }}
         >
-         
           {currentItems.map((data: NewsArticle, index: number) => {
             if (hiddenNews.has(index)) return null;
 
@@ -171,7 +268,6 @@ const Dashboard = () => {
                     borderRadius: "10px",
                     cursor: "pointer",
                     "&:hover": { boxShadow: "0px 18px 88px -4px #18274B44" },
-                    
                   }}
                   onClick={() => handleClickOpen(data.url)}
                 >
@@ -208,14 +304,13 @@ const Dashboard = () => {
                         color: "#212121",
                       }}
                     >
-                      {loading ? 
-                      "Loading Title" :
-                      (data.title
+                      {loading
+                        ? "Loading Title"
+                        : data.title
                         ? data.title.length > 50
                           ? `${data.title.slice(0, 40)}...`
                           : data.title
-                        : "")
-                    }
+                        : ""}
                     </Typography>
 
                     <Typography
@@ -227,15 +322,13 @@ const Dashboard = () => {
                         color: "#212121",
                       }}
                     >
-                      {loading ? 
-                       "Loading description....." 
-                       :(data.description
+                      {loading
+                        ? "Loading description....."
+                        : data.description
                         ? data.description.length > 100
                           ? `${data.description.slice(0, 100)}...`
                           : data.description
-                        : "")
-
-                      }
+                        : ""}
                     </Typography>
 
                     <Typography
@@ -245,31 +338,27 @@ const Dashboard = () => {
                       <CalendarMonthIcon
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
-                     {loading ? 
-                      "Loading dhat and time"
-                       :
-                       (switchApi
+                      {loading
+                        ? "Loading dhat and time"
+                        : switchApi
                         ? new Date(data.published_at).toUTCString()
-                        : new Date(data.publishedAt).toUTCString())
-                     }
+                        : new Date(data.publishedAt).toUTCString()}
                     </Typography>
                   </Container>
-                  {loading ?
-                  <Typography>
-                    Loading Image
-                  </Typography>
-                  :
-                  <img
-                    src={switchApi ? data.image_url : data.urlToImage}
-                    alt={data.title}
-                    style={{
-                      width: gridView ? "100%" : "100px",
-                      height: gridView ? "200px" : "100px",
-                      objectFit: "cover",
-                      borderRadius: gridView ? "10px" : "50%",
-                    }}
-                  />
-                  }
+                  {loading ? (
+                    <Typography>Loading Image</Typography>
+                  ) : (
+                    <img
+                      src={switchApi ? data.image_url : data.urlToImage}
+                      alt={data.title}
+                      style={{
+                        width: gridView ? "100%" : "100px",
+                        height: gridView ? "200px" : "100px",
+                        objectFit: "cover",
+                        borderRadius: gridView ? "10px" : "50%",
+                      }}
+                    />
+                  )}
                 </Container>
               </Paper>
             );
@@ -345,7 +434,291 @@ const Dashboard = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+
+       <Container sx={{marginTop:"50px", display:{xs:"block", md:"none"}}}>
+                  <Typography
+                    sx={{
+                      fontSize: "24px",
+                      fontFamily: "Roboto",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                  >
+                    Thank you so much for taking time !
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "16px",
+                      fontFamily: "Roboto",
+                      fontWeight: "400",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                  >
+                    Please provide the below details
+                  </Typography>
+                </Container>
+
+      <Container
+            sx={{
+              display: {xs:"flex", md:"none"},
+              flexDirection: "column",
+              alignItems: "flex-start",
+              justifyContent: "flex-start",
+              padding: "20px",
+            }}
+          >
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+              }}
+            >
+              <FormLabel htmlFor="name" sx={{ mb: "10px" }}>
+                Name :
+              </FormLabel>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                sx={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  backgroundColor: "#ffffff",
+                  border: "none !important",
+                  mb: "20px",
+                }}
+              />
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+              }}
+            >
+              <FormLabel htmlFor="address" sx={{ mb: "10px" }}>
+                Address :
+              </FormLabel>
+              <Input
+                type="textarea"
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                required
+                sx={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  backgroundColor: "#ffffff",
+                  border: "none !important",
+                  mb: "20px",
+                }}
+              />
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "20px",
+              }}
+            >
+              <Box
+                sx={{
+                  width: "50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <FormLabel htmlFor="country" sx={{ mb: "10px" }}>
+                  Country :
+                </FormLabel>
+                <Input
+                  type="text"
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  required
+                  sx={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    backgroundColor: "#ffffff",
+                    border: "none !important",
+                    mb: "20px",
+                  }}
+                />
+              </Box>
+              <Box
+                sx={{
+                  width: "50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <FormLabel htmlFor="state" sx={{ mb: "10px" }}>
+                  State :
+                </FormLabel>
+                <Input
+                  type="text"
+                  id="state"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  required
+                  sx={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    backgroundColor: "#ffffff",
+                    border: "none !important",
+                    mb: "20px",
+                  }}
+                />
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "20px",
+              }}
+            >
+              <Box
+                sx={{
+                  width: "50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <FormLabel htmlFor="email" sx={{ mb: "10px" }}>
+                  Email :
+                </FormLabel>
+                <Input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  sx={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    backgroundColor: "#ffffff",
+                    border: "none !important",
+                    mb: "20px",
+                  }}
+                />
+              </Box>
+              <Box
+                sx={{
+                  width: "50%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <FormLabel htmlFor="mobile" sx={{ mb: "10px" }}>
+                  Mobile Number :
+                </FormLabel>
+                <Input
+                  type="tel"
+                  id="mobile"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleInputChange}
+                  required
+                  sx={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    backgroundColor: "#ffffff",
+                    border: "none !important",
+                    mb: "20px",
+                  }}
+                />
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+              }}
+            >
+              <FormLabel htmlFor="feedback" sx={{ mb: "10px" }}>
+                Feedback :
+              </FormLabel>
+              <Input
+                type="textarea"
+                id="feedback"
+                name="feedback"
+                value={formData.feedback}
+                onChange={handleInputChange}
+                required
+                sx={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  backgroundColor: "#ffffff",
+                  border: "none !important",
+                  mb: "20px",
+                }}
+              />
+            </Box>
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Button
+                sx={{ backgroundColor: "#5CC8A1", color: "#fff" }}
+                onClick={handleSubmit}
+              >
+                Submit Feedback
+              </Button>
+            </Box>
+      </Container>
+    </Container>
   );
 };
 
