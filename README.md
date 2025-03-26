@@ -1,5 +1,17 @@
-# React + TypeScript + Vite
+# NewsApp
 
+I have created a NewsApp where I'm using an API from News.org. However, the API does not support production mode, so I am using TheNewsApp API instead.
+
+### Features:
+- TheNewsApp API provides only three feeds, which can be seen in production mode.
+- On clicking a news card, a popup will open.
+- Some news articles do not allow embedding in iframes due to CORS restrictions, which results in errors.
+- To handle this issue, I have redirected such news articles to a new tab where they open properly.
+- However, the popup remains visible after redirection.
+
+Feel free to explore and improve the app!
+
+# React + TypeScript + Vite
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

@@ -129,6 +129,19 @@ const Dashboard = () => {
           overflow: feedBack ? "hidden" : "scroll",
         }}
       >
+         <Button
+            onClick={handleSwitchApi}
+            sx={{
+              backgroundColor: switchApi ? "#FFAFAF" : "#A3FFD3",
+              color: "#000",
+              position:"absolute",
+              top:"5%",
+              right:"5%"
+            }}
+          >
+            {" "}
+            Switch API{" "}
+          </Button>
         <Container
           sx={{
             display: "grid",
@@ -142,16 +155,7 @@ const Dashboard = () => {
             zIndex: "1",
           }}
         >
-          <Button
-            onClick={handleSwitchApi}
-            sx={{
-              backgroundColor: switchApi ? "#FFAFAF" : "#A3FFD3",
-              color: "#000",
-            }}
-          >
-            {" "}
-            Switch API{" "}
-          </Button>
+         
           {currentItems.map((data: NewsArticle, index: number) => {
             if (hiddenNews.has(index)) return null;
 
@@ -167,6 +171,7 @@ const Dashboard = () => {
                     borderRadius: "10px",
                     cursor: "pointer",
                     "&:hover": { boxShadow: "0px 18px 88px -4px #18274B44" },
+                    
                   }}
                   onClick={() => handleClickOpen(data.url)}
                 >
