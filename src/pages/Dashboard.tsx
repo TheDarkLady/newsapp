@@ -139,6 +139,7 @@ const Dashboard = () => {
           xs: "column",
           md: "row",
           marginRight: "0px !important",
+          padding:"0px !important"
         },
       }}
     >
