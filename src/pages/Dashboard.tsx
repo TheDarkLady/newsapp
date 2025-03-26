@@ -17,7 +17,6 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { NewsArticle } from "../types/types";
 
 const Dashboard = () => {
-
   const newsAPIKey = import.meta.env.VITE_NEWS_API_KEY;
 
   const [open, setOpen] = useState<boolean>(false);
@@ -27,7 +26,8 @@ const Dashboard = () => {
   const [newsData, setNewsData] = useState<NewsArticle[]>([]);
   const [selectedNewsUrl, setSelectedNewsUrl] = useState<string>("");
   const [hiddenNews, setHiddenNews] = useState<Set<number>>(new Set());
-
+  const [switchApi, setSwitchApi] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const itemsPerPage = 6; // Show 5 items per page
 
   useEffect(() => {
@@ -38,9 +38,16 @@ const Dashboard = () => {
     console.log("News Data", newsData);
   }, [newsData]);
 
+  useEffect(() => {
+    fetchNews();
+  }, [switchApi]);
+
   const fetchNews = async () => {
+    setLoading(true);
     try {
-      const url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${newsAPIKey}`;
+      const url = switchApi
+        ? `https://api.thenewsapi.com/v1/news/all?api_token=MIDG8z95yVbaMwSLHLUa1B0P9aKQGQjKOcWbz4Tb&search=usd`
+        : `https://newsapi.org/v2/top-headlines?country=us&apiKey=${newsAPIKey}`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -48,14 +55,19 @@ const Dashboard = () => {
       }
 
       const data = await response.json();
-      setNewsData(data.articles);
+      setNewsData(switchApi ? data.data : data.articles);
+      console.log("News Data :", newsData);
     } catch (error) {
       console.error("Error fetching news:", error);
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
   const handleClickOpen = (url: string) => {
     window.open(url, "_blank");
+    setSelectedNewsUrl(url);
+    setOpen(true);
   };
 
   const handleClose = () => {
@@ -67,6 +79,9 @@ const Dashboard = () => {
     setHiddenNews((prev) => new Set([...prev, index]));
   };
 
+  const handleSwitchApi = () => {
+    setSwitchApi((prev) => !prev);
+  };
   // Calculate the index of the first and last item on the current page
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -127,6 +142,16 @@ const Dashboard = () => {
             zIndex: "1",
           }}
         >
+          <Button
+            onClick={handleSwitchApi}
+            sx={{
+              backgroundColor: switchApi ? "#FFAFAF" : "#A3FFD3",
+              color: "#000",
+            }}
+          >
+            {" "}
+            Switch API{" "}
+          </Button>
           {currentItems.map((data: NewsArticle, index: number) => {
             if (hiddenNews.has(index)) return null;
 
@@ -178,7 +203,14 @@ const Dashboard = () => {
                         color: "#212121",
                       }}
                     >
-                      {data.title ? data.title.length > 50 ? `${data.title.slice(0, 40)}...` : data.title : ""}
+                      {loading ? 
+                      "Loading Title" :
+                      (data.title
+                        ? data.title.length > 50
+                          ? `${data.title.slice(0, 40)}...`
+                          : data.title
+                        : "")
+                    }
                     </Typography>
 
                     <Typography
@@ -190,11 +222,15 @@ const Dashboard = () => {
                         color: "#212121",
                       }}
                     >
-                      {data.description
+                      {loading ? 
+                       "Loading description....." 
+                       :(data.description
                         ? data.description.length > 100
                           ? `${data.description.slice(0, 100)}...`
                           : data.description
-                        : ""}
+                        : "")
+
+                      }
                     </Typography>
 
                     <Typography
@@ -204,11 +240,22 @@ const Dashboard = () => {
                       <CalendarMonthIcon
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
-                      {new Date(data.publishedAt).toUTCString()}
+                     {loading ? 
+                      "Loading dhat and time"
+                       :
+                       (switchApi
+                        ? new Date(data.published_at).toUTCString()
+                        : new Date(data.publishedAt).toUTCString())
+                     }
                     </Typography>
                   </Container>
+                  {loading ?
+                  <Typography>
+                    Loading Image
+                  </Typography>
+                  :
                   <img
-                    src={data.urlToImage}
+                    src={switchApi ? data.image_url : data.urlToImage}
                     alt={data.title}
                     style={{
                       width: gridView ? "100%" : "100px",
@@ -217,6 +264,7 @@ const Dashboard = () => {
                       borderRadius: gridView ? "10px" : "50%",
                     }}
                   />
+                  }
                 </Container>
               </Paper>
             );

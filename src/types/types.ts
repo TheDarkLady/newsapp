@@ -18,4 +18,6 @@ export interface NewsArticle {
         id?: string | null;
         name: string;
     };
+    image_url:string;
+    published_at:string
 }
